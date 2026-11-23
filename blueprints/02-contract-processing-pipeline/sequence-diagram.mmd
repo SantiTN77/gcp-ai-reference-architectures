@@ -1,0 +1,53 @@
+sequenceDiagram
+    autonumber
+    actor Counsel as Legal Operations / CLM
+    participant GCS as GCS (raw / parsed / tokenized)
+    participant EA as Eventarc
+    participant WF as Cloud Workflows (GCS URIs Only)
+    participant DocAI as Document AI (Batch Layout)
+    participant Gate as Cloud Run Job (DLP + MA Gate)
+    participant DLP as Cloud DLP (Per-Doc FPE)
+    participant MA as Model Armor
+    participant Job as Cloud Run Job (Risk Extractor)
+    participant LLM as Vertex AI (Flash / Pro)
+    participant BQ as Cloud Logging Sink -> BigQuery
+    participant CLM as CLM Webhook (via Cloud NAT)
+
+    Counsel->>GCS: Upload contract PDF to contracts-raw (object CRC32C / generation)
+    GCS->>EA: Emit storage.object.v1.finalized event
+    EA->>WF: Trigger durable workflow (idempotency_key = object_generation)
+
+    WF->>DocAI: BatchProcessDocuments(raw_uri -> contracts-parsed URI)
+    DocAI->>GCS: Write full clause hierarchy & bounding boxes to contracts-parsed
+    DocAI-->>WF: Operation SUCCEEDED (parsed_uri pointer < 1 KB)
+
+    WF->>Gate: Launch Chunked DLP & Model Armor Gate (parsed_uri)
+    Gate->>GCS: Stream contracts-parsed JSON in <= 400 KB chunks
+    Gate->>DLP: content.deidentify(chunk, CRYPTO_DETERMINISTIC + per-doc tweak)
+    DLP-->>Gate: Tokenized clauses (PII/EIN/IBAN replaced, no cross-doc linkability)
+    Gate->>MA: sanitizeModelInput(tokenized_chunks)
+
+    alt Adversarial PDF Injection Detected
+        MA-->>Gate: FLAG_QUARANTINE (Hidden white-text override detected)
+        Gate->>BQ: Emit immutable QUARANTINED audit log -> BigQuery Sink
+        Gate-->>WF: Status = QUARANTINED
+        WF->>CLM: Dispatch Security Quarantine webhook via Cloud NAT
+    else Document Clean
+        MA-->>Gate: ALLOW
+        Gate->>GCS: Write clean tokenized payload to contracts-tokenized
+        Gate-->>WF: Status = CLEAN (tokenized_uri)
+
+        WF->>Job: Trigger Risk Extractor Job (tokenized_uri)
+        Job->>GCS: Read contracts-tokenized ONLY (IAM denied on contracts-raw)
+        Job->>LLM: Route 75% standard clauses -> Gemini 3.8 Flash
+        LLM-->>Job: Extracted dates, renewal, payment terms (JSON)
+        Job->>LLM: Route 25% high-risk clauses -> Gemini Pro
+        LLM-->>Job: Liability cap, indemnification, IP risk rubric (JSON)
+        Job->>BQ: Emit immutable audit record (Cloud Logging -> BigQuery Sink)
+        Job-->>WF: Extraction complete (overall_risk = HIGH / MEDIUM / LOW)
+
+        alt overall_risk == HIGH
+            WF->>CLM: Invoke Cloud Run Notifier -> Signed webhook via Cloud NAT
+            CLM-->>WF: 200 OK (Legal review task created)
+        end
+    end

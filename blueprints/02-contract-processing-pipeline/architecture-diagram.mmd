@@ -1,0 +1,70 @@
+flowchart TB
+    subgraph Ingestion["Legal Ingestion & Downstream CLM"]
+        LegalUpload["Legal Portal / CLM Upload\n(PDF via Signed URL)"]
+        CLM["Enterprise CLM & Legal Slack\n(Risk Alert Webhook)"]
+    end
+
+    subgraph VPC["Enterprise VPC (10.30.0.0/16) — VPC Service Controls Perimeter"]
+        subgraph SubOrch["Event & GCS Staging Plane (Pointers Only in Workflows)"]
+            GCSRaw["Cloud Storage: contracts-raw\n(CMEK + Object Versioning + Retention)"]
+            GCSParsed["Cloud Storage: contracts-parsed\n(DocAI Layout JSON — Avoids 512KB WF Limit)"]
+            GCSToken["Cloud Storage: contracts-tokenized\n(Post-DLP + Post-Model-Armor Clauses Only)"]
+            Eventarc["Eventarc Trigger\n(storage.object.v1.finalized)"]
+            Workflows["Cloud Workflows\n(SA: sa-contract-orch | Orchestrates GCS URIs Only)"]
+        end
+
+        subgraph SubCompute["Private Serverless Compute (10.30.2.0/24)"]
+            JobGate["Cloud Run Job: Chunked DLP & Model Armor Gate\n(SA: sa-contract-dlp-gate | <= 500KB Chunks)"]
+            JobExtract["Cloud Run Job: Clause & Risk Extractor\n(SA: sa-contract-worker | Reads contracts-tokenized Only)"]
+            JobNotify["Cloud Run Service: CLM Notifier\n(SA: sa-clm-notifier | Internal Ingress)"]
+        end
+
+        subgraph SubNet["Private Network & Egress (10.30.3.0/24)"]
+            PSC["Private Service Connect (PSC)\n(Private Google APIs Access)"]
+            NAT["Cloud Router + Cloud NAT\n(Static Allowlisted Egress IP)"]
+        end
+    end
+
+    subgraph DataAI["Managed GCP Document, Privacy, AI & Governance Plane (via PSC)"]
+        DocAI["Document AI\n(Batch Layout Parser -> GCS contracts-parsed)"]
+        DLP["Cloud DLP (Sensitive Data Protection)\n(Per-Contract Tweak CRYPTO_DETERMINISTIC FPE)"]
+        ModelArmor["Model Armor\n(Indirect Prompt Injection Screening on PDF Text)"]
+        VertexFlash["Vertex AI: Gemini 3.8 Flash\n(Standard Clauses & Metadata — 75% Clauses)"]
+        VertexPro["Vertex AI: Gemini Pro\n(Indemnification / Liability / IP — 25% Clauses)"]
+        BQ["BigQuery Audit Ledger\n(Append-Only via Cloud Logging Sink)"]
+        KMS["Cloud KMS (CMEK)\n(Buckets, BQ, & DLP Wrapping Keys)"]
+        SecretMgr["Secret Manager\n(CLM Webhook Signing Secrets)"]
+        Obs["Cloud Logging + Monitoring\n(Immutable Sink -> BQ & Pipeline SLA)"]
+    end
+
+    LegalUpload -->|"HTTPS mTLS / Signed URL"| GCSRaw
+    GCSRaw -->|"Object Finalized"| Eventarc
+    Eventarc -->|"GCS URI Pointer"| Workflows
+
+    Workflows -->|"1. Batch Parse (GCS URI)"| DocAI
+    DocAI -->|"Write Layout JSON"| GCSParsed
+    Workflows -->|"2. Trigger DLP/MA Gate"| JobGate
+    JobGate -->|"Read Parsed JSON"| GCSParsed
+    JobGate -->|"Chunked DLP & MA via PSC"| PSC
+    PSC --> DLP
+    PSC --> ModelArmor
+    JobGate -->|"Write Clean Tokenized JSON"| GCSToken
+
+    Workflows -->|"3. Trigger Risk Extractor"| JobExtract
+    JobExtract -->|"Read Tokenized Only"| GCSToken
+    JobExtract -->|"PSC Private"| PSC
+    PSC --> VertexFlash
+    PSC --> VertexPro
+    JobExtract -->|"4. Append Audit Log"| Obs
+    Obs -->|"Immutable Log Sink"| BQ
+
+    Workflows -->|"5. High-Risk Alert"| JobNotify
+    JobNotify -->|"Fetch Signing Secret"| SecretMgr
+    JobNotify -->|"Direct VPC Egress"| NAT
+    NAT -->|"Signed Webhook"| CLM
+
+    KMS -.->|"CMEK Encrypt"| GCSRaw
+    KMS -.->|"CMEK Encrypt"| GCSParsed
+    KMS -.->|"CMEK Encrypt"| GCSToken
+    KMS -.->|"CMEK Encrypt"| BQ
+    KMS -.->|"Wrap Token Key"| DLP

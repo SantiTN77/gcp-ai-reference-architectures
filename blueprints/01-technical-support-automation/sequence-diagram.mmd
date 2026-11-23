@@ -1,0 +1,50 @@
+sequenceDiagram
+    autonumber
+    actor User as Enterprise Customer
+    participant Edge as Cloud Armor + WIF/IAP Edge
+    participant GW as Cloud Run Triage API
+    participant DLP as Cloud DLP (via PSC)
+    participant MA as Model Armor (via PSC)
+    participant RAG as Vector RAG + Firestore
+    participant ADK as ADK Triage & Escalation Agent
+    participant LLM as Vertex AI (Flash / Pro)
+    participant Ticketing as Zendesk / Jira (NAT + SWP)
+    participant Audit as Cloud Logging + BigQuery
+
+    User->>Edge: Submit support ticket (HTTPS + Tenant JWT / BFF OIDC)
+    Edge->>Edge: Evaluate WAF rules, IP rate limits, verify JWT/HMAC
+    Edge->>GW: Forward authenticated request (X-Tenant-ID, Request-ID)
+
+    GW->>DLP: content.deidentify(ticket_text, InfoTypes: PII/PCI)
+    DLP-->>GW: Redacted text + ephemeral surrogate map
+
+    GW->>MA: sanitizeUserPrompt(redacted_text)
+    alt Prompt Injection Detected
+        MA-->>GW: BLOCK (Confidence >= 0.85)
+        GW->>Audit: Log security event (OWASP LLM01)
+        GW-->>User: 400 Safe fallback message
+    else Prompt Safe
+        MA-->>GW: ALLOW
+        GW->>RAG: Retrieve top-8 KB chunks (tenant_id + product_tier filter)
+        RAG->>RAG: Embed query (text-embedding-005) + Firestore find_nearest()
+        RAG-->>GW: Ranked grounded chunks + citations
+
+        GW->>MA: sanitizeModelInput(retrieved_chunks)
+        MA-->>GW: ALLOW (Indirect injection check passed)
+
+        GW->>ADK: Invoke ADK Agent (OIDC IAM, redacted_text, screened_chunks)
+        ADK->>LLM: Route to Gemini 3.8 Flash (L1 85%) or Gemini Pro (L2 15%)
+        LLM-->>ADK: Draft response + confidence score + tool_call (if escalation)
+
+        alt Confidence >= 0.80 (L1 Deflection)
+            ADK->>Audit: Emit latency, tokens, citations, deflection=true
+            ADK-->>GW: Grounded answer with KB citations
+            GW-->>User: Grounded answer with KB citations
+        else Confidence < 0.80 or Escalation Tool Requested
+            ADK->>Ticketing: Create/update Zendesk & Jira issue via Cloud NAT + SWP
+            Ticketing-->>ADK: Ticket ID (ZD-48219 / SUP-1042)
+            ADK->>Audit: Emit escalation telemetry + tool audit record
+            ADK-->>GW: Escalation summary + Ticket ID
+            GW-->>User: Ticket created (ZD-48219) with diagnostic summary
+        end
+    end

@@ -1,0 +1,57 @@
+flowchart TB
+    subgraph Users["Internal Enterprise Users"]
+        Analyst["BI / Finance / Ops Analysts\n(Corporate SSO / Okta / Google Workspace)"]
+    end
+
+    subgraph Edge["Zero-Trust Internal Access Perimeter"]
+        GLB["Application Load Balancer\n(TLS 1.3 / Internal or IAP-Protected)"]
+        Armor["Cloud Armor\n(Corporate IP Allowlist + Edge Rate Limit)"]
+        IAP["Identity-Aware Proxy (IAP)\n(Google-Signed X-Goog-IAP-JWT-Assertion)"]
+    end
+
+    subgraph VPC["Enterprise Shared VPC (10.40.0.0/16) — VPC Service Controls Perimeter"]
+        subgraph SubAgent["Private Subnet: agent-subnet (10.40.1.0/24)"]
+            ADK["Cloud Run v2: ADK SQL Analytics Agent\n(SA: sa-sql-agent | Untrusted Planning Plane | min=0)"]
+        end
+
+        subgraph SubMCP["Private Subnet: mcp-subnet (10.40.2.0/24)"]
+            MCP["Cloud Run v2: MCP Read-Only SQL Server\n(SA: sa-mcp-sql-ro | IAP JWT Verify + AST + Dry-Run + RLS)"]
+        end
+
+        subgraph SubNet["Private Data Connectivity (10.40.3.0/24)"]
+            PSC["Private Service Connect (PSC)\n(Private SQL & Google APIs)"]
+        end
+    end
+
+    subgraph DataAI["Private Databases, Privacy, Vertex AI & Governance Plane (via PSC)"]
+        CloudSQL["Cloud SQL for PostgreSQL (Read Replica)\n(Private IP Only | IAM Auth + PostgreSQL RLS)"]
+        BQ["BigQuery Analytical Warehouse\n(Row Access Policies + 10 GB Dry-Run Cap)"]
+        DLP["Cloud DLP (Sensitive Data Protection)\n(SQL Result Row PII Scrubbing via PSC)"]
+        VertexFlash["Vertex AI: Gemini 3.8 Flash\n(Standard KPIs & Summarization — 70% Queries)"]
+        VertexPro["Vertex AI: Gemini Pro\n(Complex Multi-CTE & Window SQL — 30% Queries)"]
+        ModelArmor["Model Armor\n(Prompt & SQL-Injection Intent Screening)"]
+        SecretMgr["Secret Manager\n(Directory Lookup OAuth Config)"]
+        KMS["Cloud KMS (CMEK)\n(Cloud SQL & BigQuery Encryption)"]
+        Audit["Cloud Audit Logs + Cloud Logging\n(Immutable SQL + Identity + Cost Ledger)"]
+    end
+
+    Analyst -->|"HTTPS + SSO"| GLB
+    GLB --> Armor
+    Armor --> IAP
+    IAP -->|"Signed IAP JWT Header"| ADK
+
+    ADK -->|"1. Screen Prompt (PSC)"| ModelArmor
+    ADK -->|"2. Generate SQL Plan (70%)"| VertexFlash
+    ADK -->|"2. Complex SQL Plan (30%)"| VertexPro
+
+    ADK -->|"3. MCP execute_readonly_sql (Forwards Signed IAP JWT Header)"| MCP
+    MCP -->|"4. Private PSC"| PSC
+    PSC -->|"READ ONLY Tx + set_config RLS"| CloudSQL
+    PSC -->|"Dry-Run <= 10GB + Row Policy"| BQ
+    MCP -->|"5. Scrub Result Rows (PSC)"| DLP
+    MCP -->|"6. Resolve Email -> Dept"| SecretMgr
+
+    KMS -.->|"CMEK Encrypt"| CloudSQL
+    KMS -.->|"CMEK Encrypt"| BQ
+    ADK -->|"Agent Trace"| Audit
+    MCP -->|"Executed SQL + Bytes Scanned"| Audit

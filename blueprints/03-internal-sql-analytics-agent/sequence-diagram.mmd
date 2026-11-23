@@ -1,0 +1,49 @@
+sequenceDiagram
+    autonumber
+    actor Analyst as Finance Analyst (alice@corp.com)
+    participant IAP as Cloud Armor + IAP
+    participant ADK as Cloud Run ADK SQL Agent
+    participant MA as Model Armor (via PSC)
+    participant LLM as Vertex AI (Flash / Pro)
+    participant MCP as Cloud Run MCP SQL Server
+    participant DB as Cloud SQL (RO) / BigQuery
+    participant DLP as Cloud DLP (via PSC)
+    participant Audit as Cloud Audit Logs
+
+    Analyst->>IAP: "Show Q3 EMEA margin by product line"
+    IAP->>IAP: Verify Corporate OIDC & sign X-Goog-IAP-JWT-Assertion
+    IAP->>ADK: Forward request + signed IAP JWT header
+
+    ADK->>MA: sanitizeUserPrompt(question)
+    MA-->>ADK: ALLOW
+
+    ADK->>MCP: MCP get_authorized_schema (HTTP Header: X-Goog-IAP-JWT-Assertion)
+    MCP->>MCP: Verify IAP JWT signature + aud, resolve email -> dept (EMEA_FINANCE)
+    MCP-->>ADK: Allowlisted views & column semantic catalog
+
+    ADK->>LLM: Generate parameterized SQL (Gemini 3.8 Flash or Gemini Pro)
+    LLM-->>ADK: Candidate SQL query
+
+    ADK->>MCP: MCP execute_readonly_sql(sql) + signed IAP JWT header
+    MCP->>MCP: 1. Re-verify IAP JWT, enforce per-user quota (30 qpm / 50 GB/day)
+    MCP->>MCP: 2. Parse SQL AST (single SELECT, block pg_sleep/DDL/DML, auto LIMIT 500)
+    alt AST Violation (DROP / UPDATE / pg_sleep / Forbidden Table)
+        MCP->>Audit: Log BLOCKED_SQL_VIOLATION (verified_email, raw_sql)
+        MCP-->>ADK: 403 Read-only policy violation
+    else AST Valid
+        MCP->>DB: 3. Dry-Run cost check (BQ <= 10 GB) / EXPLAIN cost <= 50k (Cloud SQL)
+        alt Cost Cap Exceeded
+            MCP->>Audit: Log BLOCKED_COST_CAP (bytes_estimated)
+            MCP-->>ADK: 422 Query exceeds 10 GB guardrail - narrow date filter
+        else Within Guardrails
+            MCP->>DB: 4. BEGIN READ ONLY + SELECT set_config('app.user_dept', $1, true)
+            DB-->>MCP: Bounded result set (<= 500 rows)
+            MCP->>DLP: content.deidentify(result_rows, InfoTypes: PII)
+            DLP-->>MCP: Scrubbed result rows
+            MCP->>Audit: Log SQL, verified_email, rows_returned, bytes_scanned, duration_ms
+            MCP-->>ADK: Scrubbed table + SQL citation
+            ADK->>LLM: Synthesize executive narrative + chart spec
+            LLM-->>ADK: Grounded answer + exact SQL used
+            ADK-->>Analyst: Verified analytics answer, table, & auditable SQL
+        end
+    end
