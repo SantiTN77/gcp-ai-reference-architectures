@@ -244,7 +244,7 @@ function main() {
       rel === "portal/pnpm-lock.yaml" ||
       rel === "tests/validate-consistency.mjs" ||
       rel === "scripts/generate-audit-report.mjs" ||
-      rel === "docs/CLAUDE_VERIFICATION.md"
+      rel === "docs/VERIFICATION.md"
     ) {
       continue;
     }

@@ -1,7 +1,7 @@
-# Enterprise GCP + AI Reference Architectures & ADRs ("Repo sin humo")
+# Enterprise GCP + AI Reference Architectures & ADRs
 
 > **Live Interactive Architecture Portal**: [https://portal-beta-nine-24.vercel.app](https://portal-beta-nine-24.vercel.app)  
-> **Zero-Fluff Principal Cloud & AI Architect Library** — 3 complete production GCP + Vertex AI blueprints, 12 verified Mermaid diagrams, 3-tier quantitative monthly GCP cost models, STRIDE & OWASP LLM Top 10 threat models, 6 MADR Architecture Decision Records, and an automated Mermaid + FinOps consistency test suite.
+> **Principal Cloud & AI Architecture Library** — 3 complete production GCP + Vertex AI blueprints, 12 verified Mermaid diagrams, 3-tier quantitative monthly GCP cost models, STRIDE & OWASP LLM Top 10 threat models, 6 MADR Architecture Decision Records, and an automated Mermaid + FinOps consistency test suite.
 
 ---
 
@@ -57,4 +57,4 @@ powershell -ExecutionPolicy Bypass -File scripts/secret-scan.ps1
 - [Independent Architecture Audit Report](./docs/ARCHITECTURE_AUDIT_REPORT.md)
 - [3.5-Minute Demo Video Script](./docs/VIDEO_SCRIPT.md)
 - [Live Demo Walkthrough](./docs/DEMO_WALKTHROUGH.md)
-- [Independent Claude Verification Handoff](./docs/CLAUDE_VERIFICATION.md)
+- [Independent Verification Guide](./docs/VERIFICATION.md)

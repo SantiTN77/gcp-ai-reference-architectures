@@ -1,4 +1,4 @@
-# Video Script: Enterprise GCP + AI Reference Architectures & ADRs ("Repo sin humo")
+# Video Script: Enterprise GCP + AI Reference Architectures & ADRs
 
 **Target Duration**: 3 minutes 30 seconds  
 **Audience**: Staff/Principal Cloud Architects, VP Engineering, AI Platform Leads, Enterprise Technical Recruiters  

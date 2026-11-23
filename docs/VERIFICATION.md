@@ -1,6 +1,6 @@
-# Claude Independent Verification Handoff
+# Independent Verification Guide
 
-This document provides everything an independent auditor (e.g., Claude) needs to verify **Project 3: Enterprise GCP + AI Reference Architectures & ADRs (`SantiTN77/gcp-ai-reference-architectures`)** end-to-end.
+This document provides everything an independent reviewer needs to verify **Project 3: Enterprise GCP + AI Reference Architectures & ADRs (`SantiTN77/gcp-ai-reference-architectures`)** end-to-end.
 
 ## 1. Live Production & Repository URLs
 
@@ -40,7 +40,7 @@ pnpm build
    - **15 / 15 checks passed** (12/12 diagrams parsed with real Mermaid v11 parser across 6 `.mmd` files + 6 embedded Markdown blocks, plus 3/3 byte-exact README parity checks).
 2. **Cross-Artifact Consistency & Cost-Math Verification (`tests/validate-consistency.mjs`)**:
    - **158 / 158 checks passed**: all 3 blueprints have all 5 required files, every diagrammed GCP service appears in its cost & threat model, all 9 monthly tier totals equal exact line-item sums to `$0.00`, all 6 ADRs contain all 7 MADR sections, `portal/src/generated/content-bundle.json` is synced, **0 `package-lock.json`**, **0 `npm` command references**.
-3. **Adversarial `/grill-me` Self-Audit Findings Resolved**:
+3. **Adversarial Self-Audit Findings Resolved**:
    - Fixed BP02 Cloud Workflows 512 KB / Cloud DLP 524 KB payload limit by introducing GCS staging buckets (`contracts-parsed`, `contracts-tokenized`) and a dedicated chunked Cloud Run Job (`sa-contract-dlp-gate`).
    - Fixed BP02 BigQuery audit ledger mutability by replacing `roles/bigquery.dataEditor` on the worker with an append-only **Cloud Logging -> BigQuery Sink** (`roles/logging.logWriter`).
    - Fixed BP01 IAM/sequence alignment & added **Model Armor** screening on retrieved RAG chunks (closing OWASP LLM01 indirect prompt injection).
@@ -51,7 +51,7 @@ pnpm build
 
 ---
 
-## 4. `/grill-me` Checklist for Independent Claude Audit
+## 4. Checklist for Independent Review
 
 - [ ] Confirm `pnpm test` exits `0` with 0 failed Mermaid or consistency checks.
 - [ ] Confirm `portal/` uses `pnpm-lock.yaml` exclusively (zero `package-lock.json`) and `.vercel/` is gitignored and strictly inside `portal/`.

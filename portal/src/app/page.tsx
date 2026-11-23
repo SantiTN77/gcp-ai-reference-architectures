@@ -26,7 +26,7 @@ export default function HomePage() {
           Enterprise GCP + AI Reference Architectures &amp; ADRs
         </h1>
         <p className="text-slate-300 text-sm sm:text-base mt-4 max-w-3xl leading-relaxed">
-          Zero-fluff (&ldquo;Repo sin humo&rdquo;) production blueprints designed for Principal Cloud
+          Production-grade blueprints designed for Principal Cloud
           &amp; AI Architects: explicit VPC/PSC/Cloud NAT security perimeters, Cloud DLP PII
           anonymization before Vertex AI inference, Firestore Vector Search ($0 idle cost),
           tiered Gemini 3.8 Flash vs Pro FinOps routing, and STRIDE/OWASP LLM Top 10 threat models.

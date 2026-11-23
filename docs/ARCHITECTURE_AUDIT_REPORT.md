@@ -15,8 +15,8 @@
 | **Quantitative Cost Accuracy & Zero-Idle FinOps Alignment** | 20% | 20 / 20 | PASS | All 9 tier totals (3 blueprints × 3 tiers) verified mathematically to $0.00 rounding error |
 | **STRIDE / OWASP LLM Top 10 Threat Modeling Rigor** | 15% | 15 / 15 | PASS | Every blueprint maps prompt injection, PII disclosure, confused-deputy IAM, SQL/PDF attacks & token DoS to concrete GCP controls |
 | **MADR Decision Record Rigor & Cross-ADR Consistency** | 15% | 15 / 15 | PASS | 6/6 ADRs contain all 7 MADR sections, quantitative trade-off matrices, break-even math & revisit triggers |
-| **Zero-Fluff Hygiene (`pnpm` Only, Zero Secrets, Portal Sync)** | 10% | 10 / 10 | PASS | 0 `package-lock.json`, 0 `npm` command refs, 0 secret scan findings, portal bundle byte-synced |
-| **Total Composite Score** | **100%** | **100 / 100** | **APPROVED** | Ready for production portal deployment & independent Claude audit |
+| **Repository Hygiene (`pnpm` Only, Zero Secrets, Portal Sync)** | 10% | 10 / 10 | PASS | 0 `package-lock.json`, 0 `npm` command refs, 0 secret scan findings, portal bundle byte-synced |
+| **Total Composite Score** | **100%** | **100 / 100** | **APPROVED** | Ready for production portal deployment & independent review |
 
 ---
 
