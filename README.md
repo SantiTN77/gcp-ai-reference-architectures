@@ -5,6 +5,12 @@
 
 ---
 
+## Demo
+
+[![Watch the narrated demo](docs/media/demo-poster.jpg)](https://github.com/SantiTN77/gcp-ai-reference-architectures/releases/download/v1.0.0/arch-demo.mp4)
+
+**[▶ Watch the 1080p narrated demo](https://github.com/SantiTN77/gcp-ai-reference-architectures/releases/download/v1.0.0/arch-demo.mp4)** · **[Open the live app](https://gcp-ai-reference-architectures.vercel.app)**
+
 ## Executive Navigation Matrix
 
 | Blueprint | Workload | Key GCP Services | Tiered Model Routing | Monthly Cost (Pilot / Growth / Enterprise) | Artifacts |
@@ -58,3 +64,8 @@ powershell -ExecutionPolicy Bypass -File scripts/secret-scan.ps1
 - [3.5-Minute Demo Video Script](./docs/VIDEO_SCRIPT.md)
 - [Live Demo Walkthrough](./docs/DEMO_WALKTHROUGH.md)
 - [Independent Verification Guide](./docs/VERIFICATION.md)
+
+## Author
+
+**Daniel Tafur** — AI Agent Engineer · AI Solutions Architect (GCP)  
+[LinkedIn](https://www.linkedin.com/in/danielsantiagotafur/) · [Portfolio](https://danieltafur.vercel.app)
