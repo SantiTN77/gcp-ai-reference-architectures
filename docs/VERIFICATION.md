@@ -4,7 +4,7 @@ This document provides everything an independent reviewer needs to verify **Proj
 
 ## 1. Live Production & Repository URLs
 
-- **Live Architecture Portal (Vercel Production)**: [https://portal-beta-nine-24.vercel.app](https://portal-beta-nine-24.vercel.app)
+- **Live Architecture Portal (Vercel Production)**: [https://gcp-ai-reference-architectures.vercel.app](https://gcp-ai-reference-architectures.vercel.app)
 - **Public GitHub Repository**: [https://github.com/SantiTN77/gcp-ai-reference-architectures](https://github.com/SantiTN77/gcp-ai-reference-architectures)
 - **Interactive Portal Routes Verified (HTTP 200, 0 Console Errors, 0 Failed Requests)**:
   - `/` (Executive Home)

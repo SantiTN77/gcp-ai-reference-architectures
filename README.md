@@ -1,6 +1,6 @@
 # Enterprise GCP + AI Reference Architectures & ADRs
 
-> **Live Interactive Architecture Portal**: [https://portal-beta-nine-24.vercel.app](https://portal-beta-nine-24.vercel.app)  
+> **Live Interactive Architecture Portal**: [https://gcp-ai-reference-architectures.vercel.app](https://gcp-ai-reference-architectures.vercel.app)  
 > **Principal Cloud & AI Architecture Library** — 3 complete production GCP + Vertex AI blueprints, 12 verified Mermaid diagrams, 3-tier quantitative monthly GCP cost models, STRIDE & OWASP LLM Top 10 threat models, 6 MADR Architecture Decision Records, and an automated Mermaid + FinOps consistency test suite.
 
 ---
@@ -30,7 +30,7 @@ All decisions follow the **MADR** format with quantitative trade-off matrices, e
 
 ## Recruiter & Principal Architect Quick-Tour (3 Minutes)
 
-1. **Open the Live Interactive Portal**: [https://portal-beta-nine-24.vercel.app](https://portal-beta-nine-24.vercel.app)
+1. **Open the Live Interactive Portal**: [https://gcp-ai-reference-architectures.vercel.app](https://gcp-ai-reference-architectures.vercel.app)
 2. **Inspect Interactive Mermaid Diagrams**: Visit `/blueprints/01-technical-support-automation`, `/blueprints/02-contract-processing-pipeline`, and `/blueprints/03-internal-sql-analytics-agent` (supports Zoom, Source view, and Copy).
 3. **Model Custom FinOps Scenarios**: Visit `/calculator` to adjust workload volume, Flash/Pro routing ratios, and Shared VPC amortization in real time.
 4. **Search Quantitative ADRs**: Visit `/adrs` to filter decisions by blueprint or technology.
