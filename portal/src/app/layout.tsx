@@ -1,12 +1,25 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
+import { Geist, Geist_Mono, Instrument_Serif } from "next/font/google";
 import "./globals.css";
 import { Navbar } from "@/components/Navbar";
 
+const sans = Geist({ subsets: ["latin"], variable: "--font-geist", display: "swap" });
+const mono = Geist_Mono({ subsets: ["latin"], variable: "--font-geist-mono", display: "swap" });
+const serif = Instrument_Serif({
+  subsets: ["latin"],
+  weight: "400",
+  style: ["normal", "italic"],
+  variable: "--font-instrument",
+  display: "swap",
+});
+
 export const metadata: Metadata = {
-  title: "Enterprise GCP + AI Reference Architectures & ADRs",
+  title: "GCP + AI Reference Architectures & ADRs",
   description:
-    "Production-grade GCP + AI reference architectures, verified Mermaid security & sequence diagrams, quantitative FinOps cost models, STRIDE/OWASP threat models, and MADR decision records.",
+    "Production-grade GCP + AI reference architectures: verified Mermaid security and sequence diagrams, quantitative FinOps cost models, STRIDE/OWASP threat models and MADR decision records.",
 };
+
+export const viewport: Viewport = { themeColor: "#F3F1EA" };
 
 export default function RootLayout({
   children,
@@ -14,14 +27,16 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="dark">
-      <body className="min-h-screen antialiased bg-[#090d16] text-slate-200 selection:bg-emerald-500/30 selection:text-emerald-200">
+    <html lang="en" className={`${sans.variable} ${mono.variable} ${serif.variable}`}>
+      <body className="min-h-screen bg-paper font-sans text-ink antialiased">
         <Navbar />
-        <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">{children}</main>
-        <footer className="border-t border-slate-800/80 mt-16 py-8 text-center text-xs text-slate-500">
-          <div className="mx-auto max-w-7xl px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
-            <span>Enterprise GCP + AI Reference Architectures &amp; ADRs</span>
-            <span>Zero Idle Cost Policy &bull; Cloud Run v2 &bull; Firestore Vector Search &bull; Cloud DLP &bull; VPC-SC</span>
+        <main className="mx-auto max-w-[1280px] px-5 pb-10 sm:px-8">{children}</main>
+        <footer className="mx-auto mt-24 max-w-[1280px] px-5 sm:px-8">
+          <div className="flex flex-col items-start justify-between gap-2 border-t border-line py-6 font-mono text-[11px] text-ink-muted sm:flex-row sm:items-center">
+            <span>Built by Daniel Tafur · AI Solutions Architect (GCP)</span>
+            <a href="https://danieltafur.vercel.app" target="_blank" rel="noopener noreferrer" className="hover:text-ink">
+              danieltafur.vercel.app ↗
+            </a>
           </div>
         </footer>
       </body>

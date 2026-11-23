@@ -1,13 +1,9 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import {
-  BLUEPRINT_COST_PRESETS,
-  calculateBlueprintCost,
-  type BlueprintId,
-  type TierKey,
-} from "@/lib/cost-models";
-import { DollarSign, TrendingDown, Sliders, CheckCircle2 } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { animate, motion, useMotionValue, useReducedMotion } from "motion/react";
+import { BLUEPRINT_COST_PRESETS, calculateBlueprintCost, type BlueprintId, type TierKey } from "@/lib/cost-models";
+import { EASE } from "./Reveal";
 
 const BLUEPRINT_IDS: BlueprintId[] = [
   "01-technical-support-automation",
@@ -16,13 +12,25 @@ const BLUEPRINT_IDS: BlueprintId[] = [
 ];
 
 function fmtUsd(amount: number): string {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(amount);
+  return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(amount);
 }
+
+/** Number that glides to its new value instead of jumping. */
+function Tween({ value, className }: { value: number; className?: string }) {
+  const reduce = useReducedMotion();
+  const mv = useMotionValue(value);
+  const [shown, setShown] = useState(value);
+  useEffect(() => {
+    if (reduce) {
+      setShown(value);
+      return;
+    }
+    const controls = animate(mv, value, { duration: 0.7, ease: EASE, onUpdate: (v) => setShown(v) });
+    return () => controls.stop();
+  }, [value, mv, reduce]);
+  return <span className={className}>{fmtUsd(shown)}</span>;
+}
+
 
 export function CostCalculator() {
   const [blueprintId, setBlueprintId] = useState<BlueprintId>("01-technical-support-automation");
@@ -40,60 +48,58 @@ export function CostCalculator() {
 
   const result = useMemo(
     () => calculateBlueprintCost(blueprintId, volume, flashShare, amortizeSharedVpc),
-    [blueprintId, volume, flashShare, amortizeSharedVpc]
+    [blueprintId, volume, flashShare, amortizeSharedVpc],
   );
 
   const tierComparison = useMemo(() => {
     const keys: TierKey[] = ["pilot", "growth", "enterprise"];
-    return keys.map((k) => {
-      const t = preset.tiers[k];
-      return {
-        key: k,
-        label: t.label,
-        calc: calculateBlueprintCost(blueprintId, t.volume, preset.defaultFlashPct, amortizeSharedVpc),
-      };
-    });
+    return keys.map((k) => ({
+      key: k,
+      label: preset.tiers[k].label,
+      calc: calculateBlueprintCost(blueprintId, preset.tiers[k].volume, preset.defaultFlashPct, amortizeSharedVpc),
+    }));
   }, [blueprintId, preset, amortizeSharedVpc]);
 
+  const total = Math.max(result.totalMonthlyUsd, 1e-9);
+  const volPct = ((volume - preset.minVolume) / (preset.maxVolume - preset.minVolume)) * 100;
+
   return (
-    <div className="space-y-8">
-      {/* Blueprint Selector */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-        {BLUEPRINT_IDS.map((id) => {
+    <div className="space-y-10">
+      {/* blueprint picker */}
+      <div className="grid grid-cols-1 border-l border-t border-line md:grid-cols-3">
+        {BLUEPRINT_IDS.map((id, i) => {
           const p = BLUEPRINT_COST_PRESETS[id];
-          const active = id === blueprintId;
+          const on = id === blueprintId;
           return (
             <button
               key={id}
               type="button"
               onClick={() => handleSelectBlueprint(id)}
-              className={`text-left p-4 rounded-xl border transition-all ${
-                active
-                  ? "bg-emerald-500/10 border-emerald-500/50 text-white"
-                  : "bg-[#0d1321] border-slate-800 text-slate-300 hover:border-slate-600"
-              }`}
+              aria-pressed={on}
+              className={`relative border-b border-r border-line p-5 text-left transition-colors duration-500 ${on ? "text-paper" : "hover:bg-card"}`}
             >
-              <div className="text-xs font-mono text-emerald-400 mb-1">
-                Default Split: {p.defaultFlashPct}% Flash / {100 - p.defaultFlashPct}% Pro
-              </div>
-              <div className="font-semibold text-sm">{p.name}</div>
+              {on ? (
+                <motion.span layoutId="calc-bp" className="absolute inset-0 -z-10 bg-ink" transition={{ type: "spring", stiffness: 380, damping: 36 }} />
+              ) : null}
+              <span className={`font-mono text-[11px] ${on ? "text-accent-soft" : "text-accent"}`}>0{i + 1}</span>
+              <span className="mt-2 block text-lg font-medium leading-snug">{p.name}</span>
+              <span className={`mt-2 block font-mono text-[11px] ${on ? "text-paper/60" : "text-ink-muted"}`}>
+                Default split {p.defaultFlashPct}% Flash / {100 - p.defaultFlashPct}% Pro
+              </span>
             </button>
           );
         })}
       </div>
 
-      {/* Controls + KPI Summary */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        <div className="lg:col-span-7 rounded-xl border border-slate-800 bg-[#0d1321] p-6 space-y-6">
-          <div className="flex items-center justify-between">
-            <h2 className="text-base font-semibold text-slate-100 flex items-center gap-2">
-              <Sliders className="h-4 w-4 text-emerald-400" />
-              Workload &amp; FinOps Controls
-            </h2>
-            <div className="flex gap-1.5">
+      <div className="grid grid-cols-1 gap-8 lg:grid-cols-12">
+        {/* controls */}
+        <div className="card space-y-8 p-6 sm:p-8 lg:col-span-7">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <h2 className="text-xl font-medium tracking-tight">Workload &amp; FinOps controls</h2>
+            <div className="isolate flex gap-1 rounded-full border border-line p-0.5">
               {(["pilot", "growth", "enterprise"] as TierKey[]).map((tierKey) => {
                 const t = preset.tiers[tierKey];
-                const isSelected = volume === t.volume;
+                const on = volume === t.volume;
                 return (
                   <button
                     key={tierKey}
@@ -102,12 +108,11 @@ export function CostCalculator() {
                       setVolume(t.volume);
                       setFlashShare(preset.defaultFlashPct);
                     }}
-                    className={`px-2.5 py-1 rounded-md text-xs font-medium border transition-colors ${
-                      isSelected
-                        ? "bg-sky-500/20 text-sky-300 border-sky-500/40"
-                        : "bg-slate-900 text-slate-400 border-slate-700 hover:text-slate-200"
-                    }`}
+                    className={`relative rounded-full px-3 py-1.5 text-xs transition-colors ${on ? "text-paper" : "text-ink-muted hover:text-ink"}`}
                   >
+                    {on ? (
+                      <motion.span layoutId="calc-tier" className="absolute inset-0 -z-10 rounded-full bg-ink" transition={{ type: "spring", stiffness: 420, damping: 34 }} />
+                    ) : null}
                     {t.label}
                   </button>
                 );
@@ -116,9 +121,9 @@ export function CostCalculator() {
           </div>
 
           <div>
-            <div className="flex justify-between text-sm mb-2">
-              <span className="text-slate-300">Monthly Volume</span>
-              <span className="font-mono font-semibold text-emerald-300">
+            <div className="mb-3 flex items-baseline justify-between gap-3">
+              <span className="text-sm text-ink-soft">Monthly volume</span>
+              <span className="font-mono text-sm">
                 {volume.toLocaleString("en-US")} {preset.unitLabel}
               </span>
             </div>
@@ -129,16 +134,15 @@ export function CostCalculator() {
               step={preset.step}
               value={volume}
               onChange={(e) => setVolume(Number(e.target.value))}
-              className="w-full accent-emerald-500 cursor-pointer"
+              className="w-full cursor-pointer"
+              style={{ background: `linear-gradient(to right, #151412 ${volPct}%, #dcd7ca ${volPct}%)`, height: 3, borderRadius: 9999 }}
             />
           </div>
 
           <div>
-            <div className="flex justify-between text-sm mb-2">
-              <span className="text-slate-300">
-                Gemini 3.8 Flash Share (vs Gemini Pro Escalation)
-              </span>
-              <span className="font-mono font-semibold text-sky-300">
+            <div className="mb-3 flex items-baseline justify-between gap-3">
+              <span className="text-sm text-ink-soft">Gemini Flash share (vs Pro escalation)</span>
+              <span className="font-mono text-sm">
                 {flashShare}% Flash / {100 - flashShare}% Pro
               </span>
             </div>
@@ -149,121 +153,108 @@ export function CostCalculator() {
               step={5}
               value={flashShare}
               onChange={(e) => setFlashShare(Number(e.target.value))}
-              className="w-full accent-sky-400 cursor-pointer"
+              className="w-full cursor-pointer"
+              style={{ background: `linear-gradient(to right, #d4471c ${flashShare}%, #dcd7ca ${flashShare}%)`, height: 3, borderRadius: 9999 }}
             />
           </div>
 
-          <label className="flex items-start gap-3 p-3.5 rounded-lg bg-slate-900/80 border border-slate-800 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={amortizeSharedVpc}
-              onChange={(e) => setAmortizeSharedVpc(e.target.checked)}
-              className="mt-1 accent-emerald-500"
-            />
-            <div className="text-xs text-slate-300 leading-relaxed">
-              <span className="font-semibold text-slate-100">
-                Amortize Shared VPC Networking (ALB + Cloud NAT + PSC)
-              </span>
-              <div className="text-slate-400">
-                Check this if deploying into an existing Enterprise Shared VPC with centralized egress &amp; ingress load balancers.
-              </div>
-            </div>
+          <label className="flex cursor-pointer items-start gap-3 border-t border-line pt-6">
+            <input type="checkbox" checked={amortizeSharedVpc} onChange={(e) => setAmortizeSharedVpc(e.target.checked)} className="mt-1 accent-[#151412]" />
+            <span className="text-sm leading-relaxed">
+              <span className="font-medium">Amortize Shared VPC networking (ALB + Cloud NAT + PSC)</span>
+              <span className="block text-ink-muted">For deployments into an existing enterprise Shared VPC with centralised ingress and egress.</span>
+            </span>
           </label>
         </div>
 
-        <div className="lg:col-span-5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-4">
-          <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/5 p-5">
-            <div className="text-xs uppercase tracking-wider text-emerald-400 font-semibold flex items-center gap-1.5">
-              <DollarSign className="h-4 w-4" />
-              Estimated Monthly GCP Spend
-            </div>
-            <div className="text-3xl font-bold font-mono text-white mt-2">
-              {fmtUsd(result.totalMonthlyUsd)}
-              <span className="text-sm font-normal text-slate-400"> / mo</span>
-            </div>
-            <div className="text-xs font-mono text-slate-300 mt-1">
-              Unit economics: ${result.unitCostUsd.toFixed(4)} per unit
-            </div>
-          </div>
-
-          <div className="rounded-xl border border-sky-500/30 bg-sky-500/5 p-5">
-            <div className="text-xs uppercase tracking-wider text-sky-400 font-semibold flex items-center gap-1.5">
-              <TrendingDown className="h-4 w-4" />
-              Flash/Pro Routing Savings vs 100% Pro
-            </div>
-            <div className="text-2xl font-bold font-mono text-sky-200 mt-2">
-              {fmtUsd(result.routingSavingsUsd)}
-              <span className="text-sm font-normal text-slate-400"> / mo saved</span>
-            </div>
-            <div className="text-xs text-slate-400 mt-1">
-              100% Pro baseline would cost {fmtUsd(result.allProMonthlyUsd)}/mo.
+        {/* totals */}
+        <div className="flex flex-col gap-6 lg:col-span-5">
+          <div className="rounded-[18px] bg-ink p-6 text-paper sm:p-8">
+            <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-paper/50">Estimated monthly GCP spend</p>
+            <p className="mt-3 font-serif text-6xl leading-none">
+              <Tween value={result.totalMonthlyUsd} />
+            </p>
+            <p className="mt-3 font-mono text-xs text-paper/60">${result.unitCostUsd.toFixed(4)} per unit</p>
+            <div className="mt-6 flex h-2 overflow-hidden rounded-full bg-white/10">
+              {result.lineItems.map((item, i) => (
+                <motion.span
+                  key={item.service}
+                  className="h-full border-r border-ink bg-paper last:border-r-0"
+                  animate={{ width: `${(item.monthlyUsd / total) * 100}%` }}
+                  transition={{ duration: 0.7, ease: EASE }}
+                  style={{ opacity: 1 - (i % 4) * 0.18 }}
+                />
+              ))}
             </div>
           </div>
 
-          <div className="rounded-xl border border-slate-800 bg-[#0d1321] p-4 flex items-start gap-2.5 text-xs text-slate-300">
-            <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" />
-            <span>{result.baselineNotes}</span>
+          <div className="card p-6">
+            <p className="eyebrow">Flash / Pro routing savings vs 100% Pro</p>
+            <p className="mt-3 font-serif text-4xl leading-none text-ok">
+              <Tween value={result.routingSavingsUsd} />
+              <span className="ml-1 font-sans text-sm text-ink-muted">/ mo</span>
+            </p>
+            <p className="mt-2 text-sm text-ink-muted">A 100% Pro baseline would cost {fmtUsd(result.allProMonthlyUsd)}/mo.</p>
           </div>
+
+          <p className="border-l-2 border-accent pl-4 text-sm leading-relaxed text-ink-muted">{result.baselineNotes}</p>
         </div>
       </div>
 
-      {/* Line-Item Table */}
-      <div className="rounded-xl border border-slate-800 bg-[#0d1321] overflow-hidden">
-        <div className="px-6 py-4 border-b border-slate-800 flex items-center justify-between">
-          <h3 className="text-sm font-semibold text-slate-100">
-            Per-Service Monthly Cost Breakdown (Matches Blueprint Architecture Nodes)
-          </h3>
-          <span className="text-xs font-mono text-slate-400">us-central1 On-Demand</span>
+      {/* line items */}
+      <div className="card overflow-hidden">
+        <div className="flex items-center justify-between border-b border-line px-6 py-4">
+          <h3 className="text-base font-medium">Per-service monthly cost — matches the blueprint nodes</h3>
+          <span className="font-mono text-[11px] text-ink-muted">us-central1 on-demand</span>
         </div>
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+          <table className="w-full min-w-[720px] text-sm">
             <thead>
-              <tr className="bg-slate-900/90 text-left text-xs uppercase tracking-wider text-slate-400">
-                <th className="py-3 px-6">GCP Service</th>
-                <th className="py-3 px-4">Category</th>
-                <th className="py-3 px-4">Formula / Sizing Assumption</th>
-                <th className="py-3 px-6 text-right">Monthly Cost</th>
+              <tr className="border-b border-line text-left">
+                {["GCP service", "Category", "Formula / sizing", "Monthly", "Share"].map((h, i) => (
+                  <th key={h} className={`eyebrow px-6 py-3 !text-[10px] font-normal ${i >= 3 ? "text-right" : ""}`}>
+                    {h}
+                  </th>
+                ))}
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-800/80">
+            <tbody className="divide-y divide-line">
               {result.lineItems.map((item) => (
-                <tr key={item.service} className="hover:bg-slate-900/40">
-                  <td className="py-3 px-6 font-medium text-slate-100">{item.service}</td>
-                  <td className="py-3 px-4">
-                    <span className="px-2 py-0.5 rounded text-[11px] font-mono bg-slate-800 text-slate-300">
-                      {item.category}
-                    </span>
+                <tr key={item.service} className="transition-colors hover:bg-paper/70">
+                  <td className="px-6 py-3 font-medium">{item.service}</td>
+                  <td className="px-6 py-3">
+                    <span className="rounded-full border border-line px-2 py-0.5 font-mono text-[10px] text-ink-muted">{item.category}</span>
                   </td>
-                  <td className="py-3 px-4 text-xs text-slate-400 font-mono">{item.formula}</td>
-                  <td className="py-3 px-6 text-right font-mono text-slate-100">
-                    {fmtUsd(item.monthlyUsd)}
+                  <td className="px-6 py-3 font-mono text-xs text-ink-muted">{item.formula}</td>
+                  <td className="px-6 py-3 text-right font-mono">{fmtUsd(item.monthlyUsd)}</td>
+                  <td className="w-40 px-6 py-3">
+                    <div className="h-1 w-full overflow-hidden rounded-full bg-paper-deep">
+                      <motion.div className="h-full bg-ink" animate={{ width: `${(item.monthlyUsd / total) * 100}%` }} transition={{ duration: 0.7, ease: EASE }} />
+                    </div>
                   </td>
                 </tr>
               ))}
-              <tr className="bg-emerald-500/10 font-semibold">
-                <td className="py-3.5 px-6 text-emerald-300" colSpan={3}>
-                  Total Estimated Monthly Cost
+              <tr className="border-t border-ink">
+                <td className="px-6 py-4 font-medium" colSpan={3}>
+                  Total estimated monthly cost
                 </td>
-                <td className="py-3.5 px-6 text-right font-mono text-emerald-300 text-base">
-                  {fmtUsd(result.totalMonthlyUsd)}
-                </td>
+                <td className="px-6 py-4 text-right font-mono text-base font-medium">{fmtUsd(result.totalMonthlyUsd)}</td>
+                <td />
               </tr>
             </tbody>
           </table>
         </div>
       </div>
 
-      {/* 3-Tier Summary Strip */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      {/* tiers */}
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
         {tierComparison.map(({ key, label, calc }) => (
-          <div key={key} className="rounded-xl border border-slate-800 bg-[#0d1321] p-5">
-            <div className="text-xs font-mono text-slate-400 uppercase">{label}</div>
-            <div className="text-xl font-bold font-mono text-white mt-1">
-              {fmtUsd(calc.totalMonthlyUsd)}/mo
-            </div>
-            <div className="text-xs text-slate-400 mt-1">
-              ${calc.unitCostUsd.toFixed(4)} / unit &bull; Saves {fmtUsd(calc.routingSavingsUsd)} vs 100% Pro
-            </div>
+          <div key={key} className="border-t border-ink pt-3">
+            <p className="font-mono text-[11px] uppercase tracking-wider text-ink-muted">{label}</p>
+            <p className="mt-2 font-serif text-4xl leading-none">{fmtUsd(calc.totalMonthlyUsd)}</p>
+            <p className="mt-2 text-xs text-ink-muted">
+              ${calc.unitCostUsd.toFixed(4)} / unit · saves {fmtUsd(calc.routingSavingsUsd)} vs 100% Pro
+            </p>
           </div>
         ))}
       </div>

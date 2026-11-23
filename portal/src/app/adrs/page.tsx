@@ -1,20 +1,21 @@
 import { getAdrs } from "@/lib/content";
 import { AdrSearch } from "@/components/AdrSearch";
+import { Reveal } from "@/components/Reveal";
 
 export default function AdrsPage() {
   const adrs = getAdrs();
-
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl sm:text-3xl font-bold text-white">
-          Architecture Decision Records (ADRs)
+    <div>
+      <Reveal className="pb-10 pt-14 md:pt-20">
+        <p className="eyebrow">MADR format · break-even math · revisit triggers</p>
+        <h1 className="mt-4 max-w-4xl text-balance text-5xl font-medium leading-[1] tracking-[-0.04em] md:text-6xl">
+          Architecture Decision <span className="font-serif italic text-accent">Records</span>
         </h1>
-        <p className="text-sm text-slate-400 mt-2 max-w-3xl">
-          Every core infrastructure, privacy, model-routing, and agent-interoperability decision
-          documented in MADR format with break-even math, trade-off matrices, and explicit revisit triggers.
+        <p className="mt-5 max-w-2xl text-lg leading-relaxed text-ink-muted">
+          Every infrastructure, privacy, model-routing and agent-interoperability decision — with the numbers that justify
+          it and the signal that would reverse it.
         </p>
-      </div>
+      </Reveal>
       <AdrSearch adrs={adrs} />
     </div>
   );

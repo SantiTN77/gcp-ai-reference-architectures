@@ -1,19 +1,19 @@
 import { CostCalculator } from "@/components/CostCalculator";
+import { Reveal } from "@/components/Reveal";
 
 export default function CalculatorPage() {
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl sm:text-3xl font-bold text-white">
-          Interactive Monthly GCP FinOps Cost Calculator
+    <div>
+      <Reveal className="pb-10 pt-14 md:pt-20">
+        <p className="eyebrow">us-central1 · on-demand · formulas from each cost-estimation.md</p>
+        <h1 className="mt-4 max-w-4xl text-balance text-5xl font-medium leading-[1] tracking-[-0.04em] md:text-6xl">
+          What will it cost <span className="font-serif italic text-accent">every month?</span>
         </h1>
-        <p className="text-sm text-slate-400 mt-2 max-w-3xl">
-          Model exact monthly GCP spend across all 3 Enterprise AI Reference Blueprints. Adjust
-          monthly workload volume, Gemini 3.8 Flash vs Gemini Pro routing ratios, and Shared VPC
-          networking amortization using the exact formulas documented in each blueprint&apos;s{" "}
-          <code className="text-sky-300">cost-estimation.md</code>.
+        <p className="mt-5 max-w-2xl text-lg leading-relaxed text-ink-muted">
+          Pick a blueprint, set the monthly volume and the Gemini Flash vs Pro routing split. Every line item maps to a node
+          in the architecture diagram.
         </p>
-      </div>
+      </Reveal>
       <CostCalculator />
     </div>
   );

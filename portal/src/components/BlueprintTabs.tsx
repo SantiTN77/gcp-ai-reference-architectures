@@ -1,82 +1,94 @@
 "use client";
 
 import { useState } from "react";
-import { Network, FileText, DollarSign, ShieldAlert } from "lucide-react";
+import { AnimatePresence, motion } from "motion/react";
 import type { BlueprintItem } from "@/lib/content";
 import { MermaidDiagram } from "./MermaidDiagram";
 import { MarkdownRenderer } from "./MarkdownRenderer";
+import { EASE } from "./Reveal";
 
 type TabId = "diagrams" | "overview" | "cost" | "security";
 
-interface BlueprintTabsProps {
-  blueprint: BlueprintItem;
-}
+const TABS: { id: TabId; label: string }[] = [
+  { id: "diagrams", label: "Architecture & Sequence" },
+  { id: "overview", label: "Overview & SLOs" },
+  { id: "cost", label: "Cost Estimation (3 Tiers)" },
+  { id: "security", label: "STRIDE / OWASP Threat Model" },
+];
 
-export function BlueprintTabs({ blueprint }: BlueprintTabsProps) {
+export function BlueprintTabs({ blueprint }: { blueprint: BlueprintItem }) {
   const [activeTab, setActiveTab] = useState<TabId>("diagrams");
-
-  const tabs: { id: TabId; label: string; icon: typeof Network }[] = [
-    { id: "diagrams", label: "Architecture & Sequence", icon: Network },
-    { id: "overview", label: "Overview & SLOs", icon: FileText },
-    { id: "cost", label: "Cost Estimation (3 Tiers)", icon: DollarSign },
-    { id: "security", label: "STRIDE / OWASP Threat Model", icon: ShieldAlert },
-  ];
 
   return (
     <div>
-      <div className="flex flex-wrap gap-2 border-b border-slate-800 pb-3 mb-6">
-        {tabs.map(({ id, label, icon: Icon }) => {
-          const isActive = activeTab === id;
-          return (
-            <button
-              key={id}
-              type="button"
-              onClick={() => setActiveTab(id)}
-              className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                isActive
-                  ? "bg-emerald-500/15 text-emerald-300 border border-emerald-500/40"
-                  : "bg-slate-900/70 text-slate-300 border border-slate-800 hover:border-slate-600 hover:text-white"
-              }`}
-            >
-              <Icon className="h-4 w-4" />
-              <span>{label}</span>
-            </button>
-          );
-        })}
+      <div className="sticky top-16 z-20 -mx-5 border-b border-line bg-paper/85 px-5 backdrop-blur-md sm:-mx-8 sm:px-8">
+        <div className="flex gap-1 overflow-x-auto py-3" role="tablist">
+          {TABS.map(({ id, label }) => {
+            const on = activeTab === id;
+            return (
+              <button
+                key={id}
+                type="button"
+                role="tab"
+                aria-selected={on}
+                onClick={() => setActiveTab(id)}
+                className={`relative whitespace-nowrap rounded-full px-4 py-2 text-sm transition-colors duration-300 ${
+                  on ? "text-paper" : "text-ink-muted hover:text-ink"
+                }`}
+              >
+                {on ? (
+                  <motion.span
+                    layoutId="bp-tab"
+                    className="absolute inset-0 -z-10 rounded-full bg-ink"
+                    transition={{ type: "spring", stiffness: 400, damping: 34 }}
+                  />
+                ) : null}
+                {label}
+              </button>
+            );
+          })}
+        </div>
       </div>
 
-      {activeTab === "diagrams" && (
-        <div className="space-y-6">
-          <MermaidDiagram
-            chart={blueprint.architectureDiagram}
-            title="Network & Security Architecture Diagram"
-            subtitle="VPC subnets, Private Service Connect, Cloud NAT, IAM least-privilege boundaries, Cloud DLP, Model Armor, KMS/Secret Manager & Vertex AI"
-          />
-          <MermaidDiagram
-            chart={blueprint.sequenceDiagram}
-            title="Runtime Request & Security Sequence Diagram"
-            subtitle="End-to-end auth verification, DLP redaction/tokenization, tiered Flash/Pro routing, tool guardrails & audit logging"
-          />
-        </div>
-      )}
-
-      {activeTab === "overview" && (
-        <div className="rounded-xl border border-slate-800 bg-[#0d1321] p-6 sm:p-8">
-          <MarkdownRenderer content={blueprint.readme} />
-        </div>
-      )}
-
-      {activeTab === "cost" && (
-        <div className="rounded-xl border border-slate-800 bg-[#0d1321] p-6 sm:p-8">
-          <MarkdownRenderer content={blueprint.costEstimation} />
-        </div>
-      )}
-
-      {activeTab === "security" && (
-        <div className="rounded-xl border border-slate-800 bg-[#0d1321] p-6 sm:p-8">
-          <MarkdownRenderer content={blueprint.securityThreatModel} />
-        </div>
-      )}
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={activeTab}
+          initial={{ opacity: 0, y: 14 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -8 }}
+          transition={{ duration: 0.5, ease: EASE }}
+          className="pt-8"
+        >
+          {activeTab === "diagrams" ? (
+            <div className="space-y-8">
+              <MermaidDiagram
+                chart={blueprint.architectureDiagram}
+                title="Network & Security Architecture Diagram"
+                subtitle="VPC subnets, Private Service Connect, Cloud NAT, least-privilege IAM, Cloud DLP, Model Armor, KMS / Secret Manager and Vertex AI"
+              />
+              <MermaidDiagram
+                chart={blueprint.sequenceDiagram}
+                title="Runtime Request & Security Sequence Diagram"
+                subtitle="Auth verification, DLP redaction, tiered Flash / Pro routing, tool guardrails and audit logging"
+              />
+            </div>
+          ) : (
+            <div className="card p-6 sm:p-10">
+              <div className="mx-auto max-w-4xl">
+                <MarkdownRenderer
+                  content={
+                    activeTab === "overview"
+                      ? blueprint.readme
+                      : activeTab === "cost"
+                        ? blueprint.costEstimation
+                        : blueprint.securityThreatModel
+                  }
+                />
+              </div>
+            </div>
+          )}
+        </motion.div>
+      </AnimatePresence>
     </div>
   );
 }

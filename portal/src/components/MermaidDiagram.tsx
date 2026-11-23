@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useId, useState } from "react";
-import { Copy, Check, ZoomIn, ZoomOut, RotateCcw, Code2 } from "lucide-react";
+import { AnimatePresence, motion } from "motion/react";
+import { Check, Copy, RotateCcw, ZoomIn, ZoomOut } from "lucide-react";
+import { EASE } from "./Reveal";
 
 interface MermaidDiagramProps {
   chart: string;
@@ -21,61 +23,56 @@ export function MermaidDiagram({ chart, title, subtitle }: MermaidDiagramProps) 
 
   useEffect(() => {
     let cancelled = false;
-
     async function renderDiagram() {
       try {
         const mermaid = (await import("mermaid")).default;
         if (!mermaidInitialized) {
           mermaid.initialize({
             startOnLoad: false,
-            theme: "dark",
-            securityLevel: "loose",
-            fontFamily: "ui-sans-serif, system-ui, -apple-system, sans-serif",
-            flowchart: {
-              useMaxWidth: true,
-              htmlLabels: true,
-              curve: "basis",
-            },
-            sequence: {
-              useMaxWidth: true,
-              actorMargin: 40,
-              messageMargin: 32,
-            },
+            theme: "base",
+            securityLevel: "strict",
+            fontFamily: "var(--font-geist), ui-sans-serif, system-ui, sans-serif",
+            flowchart: { useMaxWidth: true, htmlLabels: true, curve: "basis" },
+            sequence: { useMaxWidth: true, actorMargin: 40, messageMargin: 32 },
             themeVariables: {
-              darkMode: true,
-              background: "#0f172a",
-              primaryColor: "#1e293b",
-              primaryTextColor: "#f8fafc",
-              primaryBorderColor: "#38bdf8",
-              lineColor: "#64748b",
-              secondaryColor: "#0f172a",
-              tertiaryColor: "#111827",
-              clusterBkg: "#0b1220",
-              clusterBorder: "#334155",
-              actorBkg: "#1e293b",
-              actorBorder: "#10b981",
-              actorTextColor: "#f8fafc",
-              signalColor: "#94a3b8",
-              signalTextColor: "#e2e8f0",
+              background: "#fbfaf6",
+              primaryColor: "#fbfaf6",
+              primaryTextColor: "#151412",
+              primaryBorderColor: "#151412",
+              secondaryColor: "#f3f1ea",
+              tertiaryColor: "#eae6db",
+              lineColor: "#6e6a60",
+              textColor: "#151412",
+              clusterBkg: "#f3f1ea",
+              clusterBorder: "#bdb6a6",
+              edgeLabelBackground: "#fbfaf6",
+              actorBkg: "#fbfaf6",
+              actorBorder: "#151412",
+              actorTextColor: "#151412",
+              actorLineColor: "#bdb6a6",
+              signalColor: "#3b3934",
+              signalTextColor: "#151412",
+              noteBkgColor: "#f6dfd5",
+              noteBorderColor: "#d4471c",
+              noteTextColor: "#151412",
+              labelBoxBkgColor: "#eae6db",
+              labelBoxBorderColor: "#bdb6a6",
+              activationBkgColor: "#f6dfd5",
+              activationBorderColor: "#d4471c",
             },
           });
           mermaidInitialized = true;
         }
-
-        const renderId = `mmd-${reactId}-${Date.now()}`;
-        const { svg: renderedSvg } = await mermaid.render(renderId, chart.trim());
+        const { svg: renderedSvg } = await mermaid.render(`mmd-${reactId}-${Date.now()}`, chart.trim());
         if (!cancelled) {
           setSvg(renderedSvg);
           setError(null);
         }
       } catch (err) {
-        if (!cancelled) {
-          setError(err instanceof Error ? err.message : "Failed to render Mermaid diagram");
-        }
+        if (!cancelled) setError(err instanceof Error ? err.message : "Failed to render Mermaid diagram");
       }
     }
-
-    renderDiagram();
+    void renderDiagram();
     return () => {
       cancelled = true;
     };
@@ -91,89 +88,74 @@ export function MermaidDiagram({ chart, title, subtitle }: MermaidDiagramProps) 
     }
   };
 
+  const iconBtn =
+    "flex h-8 w-8 items-center justify-center rounded-full border border-line-strong text-ink transition-colors hover:border-ink";
+
   return (
-    <div className="rounded-xl border border-slate-800 bg-[#0d1321] overflow-hidden my-5">
-      <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 border-b border-slate-800 bg-slate-900/60">
-        <div>
-          {title && <h3 className="text-sm font-semibold text-slate-100">{title}</h3>}
-          {subtitle && <p className="text-xs text-slate-400">{subtitle}</p>}
+    <figure className="card my-6 overflow-hidden">
+      <figcaption className="flex flex-wrap items-center justify-between gap-3 border-b border-line px-5 py-4">
+        <div className="min-w-0">
+          {title ? <h3 className="text-base font-medium tracking-tight text-ink">{title}</h3> : null}
+          {subtitle ? <p className="mt-0.5 text-xs text-ink-muted">{subtitle}</p> : null}
         </div>
         <div className="flex items-center gap-1.5">
-          <button
-            type="button"
-            onClick={() => setScale((s) => Math.max(0.6, Number((s - 0.15).toFixed(2))))}
-            className="p-1.5 rounded-md bg-slate-800/80 hover:bg-slate-700 text-slate-300"
-            title="Zoom out"
-          >
+          <button type="button" onClick={() => setScale((s) => Math.max(0.6, +(s - 0.15).toFixed(2)))} className={iconBtn} title="Zoom out">
             <ZoomOut className="h-3.5 w-3.5" />
           </button>
-          <span className="text-[11px] font-mono text-slate-400 w-10 text-center">
-            {Math.round(scale * 100)}%
-          </span>
-          <button
-            type="button"
-            onClick={() => setScale((s) => Math.min(2.0, Number((s + 0.15).toFixed(2))))}
-            className="p-1.5 rounded-md bg-slate-800/80 hover:bg-slate-700 text-slate-300"
-            title="Zoom in"
-          >
+          <span className="w-11 text-center font-mono text-[11px] text-ink-muted">{Math.round(scale * 100)}%</span>
+          <button type="button" onClick={() => setScale((s) => Math.min(2.4, +(s + 0.15).toFixed(2)))} className={iconBtn} title="Zoom in">
             <ZoomIn className="h-3.5 w-3.5" />
           </button>
-          <button
-            type="button"
-            onClick={() => setScale(1)}
-            className="p-1.5 rounded-md bg-slate-800/80 hover:bg-slate-700 text-slate-300"
-            title="Reset zoom"
-          >
+          <button type="button" onClick={() => setScale(1)} className={iconBtn} title="Reset zoom">
             <RotateCcw className="h-3.5 w-3.5" />
           </button>
           <button
             type="button"
             onClick={() => setShowSource((v) => !v)}
-            className={`inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium ${
-              showSource
-                ? "bg-sky-500/20 text-sky-300 border border-sky-500/40"
-                : "bg-slate-800/80 hover:bg-slate-700 text-slate-300"
+            className={`ml-1 rounded-full border px-3 py-1.5 text-xs transition-colors ${
+              showSource ? "border-ink bg-ink text-paper" : "border-line-strong hover:border-ink"
             }`}
           >
-            <Code2 className="h-3.5 w-3.5" />
-            <span>Source</span>
+            Source
           </button>
-          <button
-            type="button"
-            onClick={handleCopy}
-            className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium bg-slate-800/80 hover:bg-slate-700 text-slate-300"
-          >
-            {copied ? <Check className="h-3.5 w-3.5 text-emerald-400" /> : <Copy className="h-3.5 w-3.5" />}
-            <span>{copied ? "Copied" : "Copy"}</span>
+          <button type="button" onClick={handleCopy} className="inline-flex items-center gap-1 rounded-full border border-line-strong px-3 py-1.5 text-xs transition-colors hover:border-ink">
+            {copied ? <Check className="h-3.5 w-3.5 text-ok" /> : <Copy className="h-3.5 w-3.5" />}
+            {copied ? "Copied" : "Copy"}
           </button>
         </div>
-      </div>
+      </figcaption>
 
       {error ? (
-        <div className="p-4 bg-red-950/40 text-red-300 text-xs font-mono">
-          Mermaid Render Error: {error}
-        </div>
+        <div className="bg-bad-soft p-4 font-mono text-xs text-bad">Mermaid render error: {error}</div>
       ) : (
-        <div className="p-4 sm:p-6 overflow-x-auto bg-[#0b101d] min-h-[240px] flex items-center justify-center">
+        <div className="flex min-h-[280px] items-start justify-center overflow-auto bg-[radial-gradient(circle_at_1px_1px,#d8d3c6_1px,transparent_0)] bg-[length:22px_22px] p-5 sm:p-8">
           {svg ? (
-            <div
-              className="w-full flex justify-center transition-transform origin-top"
-              style={{ transform: `scale(${scale})` }}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.98 }}
+              animate={{ opacity: 1, scale }}
+              transition={{ duration: 0.6, ease: EASE }}
+              className="mermaid-canvas flex w-full origin-top justify-center"
               dangerouslySetInnerHTML={{ __html: svg }}
             />
           ) : (
-            <div className="text-xs font-mono text-slate-500 animate-pulse">
-              Rendering verified Mermaid SVG...
-            </div>
+            <div className="shimmer mt-20 h-2 w-48 rounded-full bg-paper-deep" />
           )}
         </div>
       )}
 
-      {showSource && (
-        <pre className="p-4 border-t border-slate-800 bg-slate-950 text-xs font-mono text-sky-200 overflow-x-auto">
-          <code>{chart}</code>
-        </pre>
-      )}
-    </div>
+      <AnimatePresence initial={false}>
+        {showSource ? (
+          <motion.pre
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.5, ease: EASE }}
+            className="overflow-hidden bg-ink font-mono text-xs text-paper/85"
+          >
+            <code className="block overflow-x-auto p-5">{chart}</code>
+          </motion.pre>
+        ) : null}
+      </AnimatePresence>
+    </figure>
   );
 }
