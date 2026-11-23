@@ -1,0 +1,28 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Next.js / Portal build artifacts
+portal/.next/
+portal/out/
+portal/.vercel/
+.vercel/
+
+# Environment & Secrets (NEVER commit)
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+*service-account*.json
+credentials.json
+
+# Terraform state (if ever added)
+*.tfstate
+*.tfstate.*
+.terraform/
+
+# OS & Editor
+.DS_Store
+Thumbs.db
+*.log
