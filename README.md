@@ -7,9 +7,12 @@
 
 ## Demo
 
-[![Watch the narrated demo](docs/media/demo-poster.jpg)](https://github.com/SantiTN77/gcp-ai-reference-architectures/releases/download/v1.0.0/arch-demo.mp4)
+| English | Español |
+| --- | --- |
+| [![Watch the narrated demo](docs/media/demo-poster.jpg)](https://github.com/SantiTN77/gcp-ai-reference-architectures/releases/download/v1.1.0/arch-demo.mp4) | [![Ver la demo narrada](docs/media/demo-poster-es.jpg)](https://github.com/SantiTN77/gcp-ai-reference-architectures/releases/download/v1.1.0/arch-demo-es.mp4) |
+| **[▶ Narrated demo (EN)](https://github.com/SantiTN77/gcp-ai-reference-architectures/releases/download/v1.1.0/arch-demo.mp4)** | **[▶ Demo narrada (ES)](https://github.com/SantiTN77/gcp-ai-reference-architectures/releases/download/v1.1.0/arch-demo-es.mp4)** |
 
-**[▶ Watch the 1080p narrated demo](https://github.com/SantiTN77/gcp-ai-reference-architectures/releases/download/v1.0.0/arch-demo.mp4)** · **[Open the live app](https://gcp-ai-reference-architectures.vercel.app)**
+**[Open the live app](https://gcp-ai-reference-architectures.vercel.app)** — the UI is bilingual: switch **EN / ES** in the header, or open it directly in Spanish with [`?lang=es`](https://gcp-ai-reference-architectures.vercel.app/?lang=es).
 
 ## Executive Navigation Matrix
 
