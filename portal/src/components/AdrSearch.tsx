@@ -6,6 +6,7 @@ import { AnimatePresence, motion } from "motion/react";
 import { ArrowUpRight, Search } from "lucide-react";
 import type { AdrItem } from "@/lib/content";
 import { EASE } from "./Reveal";
+import { ADR_ES, STRINGS, useLang } from "@/lib/i18n";
 
 const FILTERS = [
   { id: "all", label: "All" },
@@ -17,13 +18,18 @@ const FILTERS = [
 export function AdrSearch({ adrs }: { adrs: AdrItem[] }) {
   const [query, setQuery] = useState("");
   const [bpFilter, setBpFilter] = useState<string>("all");
+  const [lang] = useLang();
+  const t = STRINGS[lang];
+  const es = lang === "es";
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     return adrs.filter((adr) => {
       if (bpFilter !== "all" && !adr.appliesTo.toLowerCase().includes(bpFilter.toLowerCase())) return false;
       if (!q) return true;
-      return [adr.id, adr.title, adr.summary, adr.content].some((s) => s.toLowerCase().includes(q));
+      return [adr.id, adr.title, adr.summary, adr.content, ADR_ES[adr.id]?.title ?? "", ADR_ES[adr.id]?.summary ?? ""].some((s) =>
+        s.toLowerCase().includes(q),
+      );
     });
   }, [adrs, query, bpFilter]);
 
@@ -36,7 +42,7 @@ export function AdrSearch({ adrs }: { adrs: AdrItem[] }) {
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search — Firestore, Cloud Run, DLP, MCP, A2A, break-even…"
+            placeholder={t.search}
             className="w-full bg-transparent py-2 pl-7 text-base placeholder:text-ink-faint focus:outline-none"
           />
         </label>
@@ -53,7 +59,7 @@ export function AdrSearch({ adrs }: { adrs: AdrItem[] }) {
                 {on ? (
                   <motion.span layoutId="adr-filter" className="absolute inset-0 -z-10 rounded-full bg-ink" transition={{ type: "spring", stiffness: 400, damping: 34 }} />
                 ) : null}
-                {opt.label}
+                {opt.id === "all" ? t.all : opt.label}
               </button>
             );
           })}
@@ -79,9 +85,9 @@ export function AdrSearch({ adrs }: { adrs: AdrItem[] }) {
                 <span className="col-span-12 font-mono text-xs text-accent md:col-span-2">{adr.id}</span>
                 <div className="col-span-12 md:col-span-7">
                   <h2 className="text-xl font-medium leading-snug tracking-tight transition-transform duration-500 group-hover:translate-x-1">
-                    {adr.title.replace(/^ADR-\d+:\s*/, "")}
+                    {(es && ADR_ES[adr.id]?.title) || adr.title.replace(/^ADR-\d+:\s*/, "")}
                   </h2>
-                  <p className="mt-2 line-clamp-2 text-sm leading-relaxed text-ink-muted">{adr.summary}</p>
+                  <p className="mt-2 line-clamp-2 text-sm leading-relaxed text-ink-muted">{(es && ADR_ES[adr.id]?.summary) || adr.summary.replace(/\*\*/g, "")}</p>
                 </div>
                 <div className="col-span-10 md:col-span-2">
                   <span className="inline-flex items-center gap-1.5 font-mono text-[11px] text-ok">
@@ -99,7 +105,7 @@ export function AdrSearch({ adrs }: { adrs: AdrItem[] }) {
       </motion.ul>
 
       {filtered.length === 0 ? (
-        <p className="py-16 text-center text-ink-muted">No ADRs match &ldquo;{query}&rdquo;.</p>
+        <p className="py-16 text-center text-ink-muted">{t.noMatch} &ldquo;{query}&rdquo;.</p>
       ) : null}
     </div>
   );

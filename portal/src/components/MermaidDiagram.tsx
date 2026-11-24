@@ -4,6 +4,7 @@ import { useEffect, useId, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { Check, Copy, RotateCcw, ZoomIn, ZoomOut } from "lucide-react";
 import { EASE } from "./Reveal";
+import { STRINGS, useLang } from "@/lib/i18n";
 
 interface MermaidDiagramProps {
   chart: string;
@@ -20,6 +21,8 @@ export function MermaidDiagram({ chart, title, subtitle }: MermaidDiagramProps) 
   const [scale, setScale] = useState<number>(1);
   const [showSource, setShowSource] = useState<boolean>(false);
   const [copied, setCopied] = useState<boolean>(false);
+  const [lang] = useLang();
+  const t = STRINGS[lang];
 
   useEffect(() => {
     let cancelled = false;
@@ -99,14 +102,14 @@ export function MermaidDiagram({ chart, title, subtitle }: MermaidDiagramProps) 
           {subtitle ? <p className="mt-0.5 text-xs text-ink-muted">{subtitle}</p> : null}
         </div>
         <div className="flex items-center gap-1.5">
-          <button type="button" onClick={() => setScale((s) => Math.max(0.6, +(s - 0.15).toFixed(2)))} className={iconBtn} title="Zoom out">
+          <button type="button" onClick={() => setScale((s) => Math.max(0.6, +(s - 0.15).toFixed(2)))} className={iconBtn} title="Zoom out" aria-label={t.zoomOut}>
             <ZoomOut className="h-3.5 w-3.5" />
           </button>
           <span className="w-11 text-center font-mono text-[11px] text-ink-muted">{Math.round(scale * 100)}%</span>
-          <button type="button" onClick={() => setScale((s) => Math.min(2.4, +(s + 0.15).toFixed(2)))} className={iconBtn} title="Zoom in">
+          <button type="button" onClick={() => setScale((s) => Math.min(2.4, +(s + 0.15).toFixed(2)))} className={iconBtn} title="Zoom in" aria-label={t.zoomIn}>
             <ZoomIn className="h-3.5 w-3.5" />
           </button>
-          <button type="button" onClick={() => setScale(1)} className={iconBtn} title="Reset zoom">
+          <button type="button" onClick={() => setScale(1)} className={iconBtn} title="Reset zoom" aria-label={t.reset}>
             <RotateCcw className="h-3.5 w-3.5" />
           </button>
           <button
@@ -116,11 +119,11 @@ export function MermaidDiagram({ chart, title, subtitle }: MermaidDiagramProps) 
               showSource ? "border-ink bg-ink text-paper" : "border-line-strong hover:border-ink"
             }`}
           >
-            Source
+            {t.sourceBtn}
           </button>
           <button type="button" onClick={handleCopy} className="inline-flex items-center gap-1 rounded-full border border-line-strong px-3 py-1.5 text-xs transition-colors hover:border-ink">
             {copied ? <Check className="h-3.5 w-3.5 text-ok" /> : <Copy className="h-3.5 w-3.5" />}
-            {copied ? "Copied" : "Copy"}
+            {copied ? t.copied : t.copy}
           </button>
         </div>
       </figcaption>

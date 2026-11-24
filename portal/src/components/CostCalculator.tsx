@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { animate, motion, useMotionValue, useReducedMotion } from "motion/react";
 import { BLUEPRINT_COST_PRESETS, calculateBlueprintCost, type BlueprintId, type TierKey } from "@/lib/cost-models";
 import { EASE } from "./Reveal";
+import { COST_ES, STRINGS, tierLabelEs, useLang } from "@/lib/i18n";
 
 const BLUEPRINT_IDS: BlueprintId[] = [
   "01-technical-support-automation",
@@ -38,6 +39,11 @@ export function CostCalculator() {
   const [volume, setVolume] = useState<number>(preset.tiers.growth.volume);
   const [flashShare, setFlashShare] = useState<number>(preset.defaultFlashPct);
   const [amortizeSharedVpc, setAmortizeSharedVpc] = useState<boolean>(false);
+  const [lang] = useLang();
+  const t = STRINGS[lang];
+  const es = lang === "es";
+  const tierLabel = (l: string) => (es ? tierLabelEs(l) : l);
+  const unit = es ? (COST_ES.units[preset.unitLabel] ?? preset.unitLabel) : preset.unitLabel;
 
   const handleSelectBlueprint = (id: BlueprintId) => {
     const next = BLUEPRINT_COST_PRESETS[id];
@@ -82,9 +88,9 @@ export function CostCalculator() {
                 <motion.span layoutId="calc-bp" className="absolute inset-0 -z-10 bg-ink" transition={{ type: "spring", stiffness: 380, damping: 36 }} />
               ) : null}
               <span className={`font-mono text-[11px] ${on ? "text-accent-soft" : "text-accent"}`}>0{i + 1}</span>
-              <span className="mt-2 block text-lg font-medium leading-snug">{p.name}</span>
+              <span className="mt-2 block text-lg font-medium leading-snug">{(es && COST_ES.names[id]) || p.name}</span>
               <span className={`mt-2 block font-mono text-[11px] ${on ? "text-paper/60" : "text-ink-muted"}`}>
-                Default split {p.defaultFlashPct}% Flash / {100 - p.defaultFlashPct}% Pro
+                {t.defaultSplit} {p.defaultFlashPct}% Flash / {100 - p.defaultFlashPct}% Pro
               </span>
             </button>
           );
@@ -95,7 +101,7 @@ export function CostCalculator() {
         {/* controls */}
         <div className="card space-y-8 p-6 sm:p-8 lg:col-span-7">
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <h2 className="text-xl font-medium tracking-tight">Workload &amp; FinOps controls</h2>
+            <h2 className="text-xl font-medium tracking-tight">{t.controls}</h2>
             <div className="isolate flex gap-1 rounded-full border border-line p-0.5">
               {(["pilot", "growth", "enterprise"] as TierKey[]).map((tierKey) => {
                 const t = preset.tiers[tierKey];
@@ -113,7 +119,7 @@ export function CostCalculator() {
                     {on ? (
                       <motion.span layoutId="calc-tier" className="absolute inset-0 -z-10 rounded-full bg-ink" transition={{ type: "spring", stiffness: 420, damping: 34 }} />
                     ) : null}
-                    {t.label}
+                    {tierLabel(t.label)}
                   </button>
                 );
               })}
@@ -122,9 +128,9 @@ export function CostCalculator() {
 
           <div>
             <div className="mb-3 flex items-baseline justify-between gap-3">
-              <span className="text-sm text-ink-soft">Monthly volume</span>
+              <span className="text-sm text-ink-soft">{t.volume}</span>
               <span className="font-mono text-sm">
-                {volume.toLocaleString("en-US")} {preset.unitLabel}
+                {volume.toLocaleString("en-US")} {unit}
               </span>
             </div>
             <input
@@ -141,7 +147,7 @@ export function CostCalculator() {
 
           <div>
             <div className="mb-3 flex items-baseline justify-between gap-3">
-              <span className="text-sm text-ink-soft">Gemini Flash share (vs Pro escalation)</span>
+              <span className="text-sm text-ink-soft">{t.flash}</span>
               <span className="font-mono text-sm">
                 {flashShare}% Flash / {100 - flashShare}% Pro
               </span>
@@ -161,8 +167,8 @@ export function CostCalculator() {
           <label className="flex cursor-pointer items-start gap-3 border-t border-line pt-6">
             <input type="checkbox" checked={amortizeSharedVpc} onChange={(e) => setAmortizeSharedVpc(e.target.checked)} className="mt-1 accent-[#151412]" />
             <span className="text-sm leading-relaxed">
-              <span className="font-medium">Amortize Shared VPC networking (ALB + Cloud NAT + PSC)</span>
-              <span className="block text-ink-muted">For deployments into an existing enterprise Shared VPC with centralised ingress and egress.</span>
+              <span className="font-medium">{t.amortize}</span>
+              <span className="block text-ink-muted">{t.amortizeSub}</span>
             </span>
           </label>
         </div>
@@ -170,11 +176,11 @@ export function CostCalculator() {
         {/* totals */}
         <div className="flex flex-col gap-6 lg:col-span-5">
           <div className="rounded-[18px] bg-ink p-6 text-paper sm:p-8">
-            <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-paper/50">Estimated monthly GCP spend</p>
+            <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-paper/50">{t.spend}</p>
             <p className="mt-3 font-serif text-6xl leading-none">
               <Tween value={result.totalMonthlyUsd} />
             </p>
-            <p className="mt-3 font-mono text-xs text-paper/60">${result.unitCostUsd.toFixed(4)} per unit</p>
+            <p className="mt-3 font-mono text-xs text-paper/60">${result.unitCostUsd.toFixed(4)} {t.perUnit}</p>
             <div className="mt-6 flex h-2 overflow-hidden rounded-full bg-white/10">
               {result.lineItems.map((item, i) => (
                 <motion.span
@@ -189,29 +195,29 @@ export function CostCalculator() {
           </div>
 
           <div className="card p-6">
-            <p className="eyebrow">Flash / Pro routing savings vs 100% Pro</p>
+            <p className="eyebrow">{t.savings}</p>
             <p className="mt-3 font-serif text-4xl leading-none text-ok">
               <Tween value={result.routingSavingsUsd} />
-              <span className="ml-1 font-sans text-sm text-ink-muted">/ mo</span>
+              <span className="ml-1 font-sans text-sm text-ink-muted">{t.perMonth}</span>
             </p>
-            <p className="mt-2 text-sm text-ink-muted">A 100% Pro baseline would cost {fmtUsd(result.allProMonthlyUsd)}/mo.</p>
+            <p className="mt-2 text-sm text-ink-muted">{t.baseline} {fmtUsd(result.allProMonthlyUsd)}{t.perMonth}.</p>
           </div>
 
-          <p className="border-l-2 border-accent pl-4 text-sm leading-relaxed text-ink-muted">{result.baselineNotes}</p>
+          <p className="border-l-2 border-accent pl-4 text-sm leading-relaxed text-ink-muted">{(es && COST_ES.notes[result.baselineNotes]) || result.baselineNotes}</p>
         </div>
       </div>
 
       {/* line items */}
       <div className="card overflow-hidden">
         <div className="flex items-center justify-between border-b border-line px-6 py-4">
-          <h3 className="text-base font-medium">Per-service monthly cost — matches the blueprint nodes</h3>
+          <h3 className="text-base font-medium">{t.breakdown}</h3>
           <span className="font-mono text-[11px] text-ink-muted">us-central1 on-demand</span>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full min-w-[720px] text-sm">
             <thead>
               <tr className="border-b border-line text-left">
-                {["GCP service", "Category", "Formula / sizing", "Monthly", "Share"].map((h, i) => (
+                {t.cols.map((h, i) => (
                   <th key={h} className={`eyebrow px-6 py-3 !text-[10px] font-normal ${i >= 3 ? "text-right" : ""}`}>
                     {h}
                   </th>
@@ -223,7 +229,7 @@ export function CostCalculator() {
                 <tr key={item.service} className="transition-colors hover:bg-paper/70">
                   <td className="px-6 py-3 font-medium">{item.service}</td>
                   <td className="px-6 py-3">
-                    <span className="rounded-full border border-line px-2 py-0.5 font-mono text-[10px] text-ink-muted">{item.category}</span>
+                    <span className="rounded-full border border-line px-2 py-0.5 font-mono text-[10px] text-ink-muted">{(es && COST_ES.categories[item.category]) || item.category}</span>
                   </td>
                   <td className="px-6 py-3 font-mono text-xs text-ink-muted">{item.formula}</td>
                   <td className="px-6 py-3 text-right font-mono">{fmtUsd(item.monthlyUsd)}</td>
@@ -236,7 +242,7 @@ export function CostCalculator() {
               ))}
               <tr className="border-t border-ink">
                 <td className="px-6 py-4 font-medium" colSpan={3}>
-                  Total estimated monthly cost
+                  {t.total}
                 </td>
                 <td className="px-6 py-4 text-right font-mono text-base font-medium">{fmtUsd(result.totalMonthlyUsd)}</td>
                 <td />
@@ -250,10 +256,10 @@ export function CostCalculator() {
       <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
         {tierComparison.map(({ key, label, calc }) => (
           <div key={key} className="border-t border-ink pt-3">
-            <p className="font-mono text-[11px] uppercase tracking-wider text-ink-muted">{label}</p>
+            <p className="font-mono text-[11px] uppercase tracking-wider text-ink-muted">{tierLabel(label)}</p>
             <p className="mt-2 font-serif text-4xl leading-none">{fmtUsd(calc.totalMonthlyUsd)}</p>
             <p className="mt-2 text-xs text-ink-muted">
-              ${calc.unitCostUsd.toFixed(4)} / unit · saves {fmtUsd(calc.routingSavingsUsd)} vs 100% Pro
+              ${calc.unitCostUsd.toFixed(4)} / {t.perUnit} · {t.saves} {fmtUsd(calc.routingSavingsUsd)} {t.vsPro}
             </p>
           </div>
         ))}

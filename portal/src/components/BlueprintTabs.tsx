@@ -6,24 +6,24 @@ import type { BlueprintItem } from "@/lib/content";
 import { MermaidDiagram } from "./MermaidDiagram";
 import { MarkdownRenderer } from "./MarkdownRenderer";
 import { EASE } from "./Reveal";
+import { STRINGS, useLang } from "@/lib/i18n";
+import { DocsNote } from "./T";
 
 type TabId = "diagrams" | "overview" | "cost" | "security";
 
-const TABS: { id: TabId; label: string }[] = [
-  { id: "diagrams", label: "Architecture & Sequence" },
-  { id: "overview", label: "Overview & SLOs" },
-  { id: "cost", label: "Cost Estimation (3 Tiers)" },
-  { id: "security", label: "STRIDE / OWASP Threat Model" },
-];
+const TAB_IDS: TabId[] = ["diagrams", "overview", "cost", "security"];
 
 export function BlueprintTabs({ blueprint }: { blueprint: BlueprintItem }) {
   const [activeTab, setActiveTab] = useState<TabId>("diagrams");
+  const [lang] = useLang();
+  const t = STRINGS[lang];
 
   return (
     <div>
       <div className="sticky top-16 z-20 -mx-5 border-b border-line bg-paper/85 px-5 backdrop-blur-md sm:-mx-8 sm:px-8">
         <div className="flex gap-1 overflow-x-auto py-3" role="tablist">
-          {TABS.map(({ id, label }) => {
+          {TAB_IDS.map((id, i) => {
+            const label = t.tabs[i];
             const on = activeTab === id;
             return (
               <button
@@ -63,18 +63,19 @@ export function BlueprintTabs({ blueprint }: { blueprint: BlueprintItem }) {
             <div className="space-y-8">
               <MermaidDiagram
                 chart={blueprint.architectureDiagram}
-                title="Network & Security Architecture Diagram"
-                subtitle="VPC subnets, Private Service Connect, Cloud NAT, least-privilege IAM, Cloud DLP, Model Armor, KMS / Secret Manager and Vertex AI"
+                title={t.diagA}
+                subtitle={t.diagASub}
               />
               <MermaidDiagram
                 chart={blueprint.sequenceDiagram}
-                title="Runtime Request & Security Sequence Diagram"
-                subtitle="Auth verification, DLP redaction, tiered Flash / Pro routing, tool guardrails and audit logging"
+                title={t.diagB}
+                subtitle={t.diagBSub}
               />
             </div>
           ) : (
             <div className="card p-6 sm:p-10">
               <div className="mx-auto max-w-4xl">
+                <DocsNote />
                 <MarkdownRenderer
                   content={
                     activeTab === "overview"

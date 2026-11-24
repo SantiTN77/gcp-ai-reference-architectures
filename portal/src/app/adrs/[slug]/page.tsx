@@ -4,6 +4,7 @@ import { ArrowLeft, ArrowRight } from "lucide-react";
 import { getAdrs, getAdrBySlug } from "@/lib/content";
 import { MarkdownRenderer } from "@/components/MarkdownRenderer";
 import { Reveal } from "@/components/Reveal";
+import { AdrTitle, DocsNote, T } from "@/components/T";
 
 export function generateStaticParams() {
   return getAdrs().map((adr) => ({ slug: adr.slug }));
@@ -24,7 +25,7 @@ export default async function AdrDetailPage({ params }: { params: Promise<{ slug
       <div className="flex items-center justify-between pt-8">
         <Link href="/adrs" className="group inline-flex items-center gap-1.5 text-sm text-ink-muted hover:text-ink">
           <ArrowLeft className="h-4 w-4 transition-transform group-hover:-translate-x-0.5" />
-          Back to All ADRs
+          <T k="backAdrs" />
         </Link>
         <span className="font-mono text-xs text-accent">
           {adr.id} · {index + 1} / {adrs.length}
@@ -33,6 +34,7 @@ export default async function AdrDetailPage({ params }: { params: Promise<{ slug
 
       <Reveal>
         <article className="pt-10">
+          <DocsNote />
           <MarkdownRenderer content={adr.content} />
         </article>
       </Reveal>
@@ -43,7 +45,9 @@ export default async function AdrDetailPage({ params }: { params: Promise<{ slug
             <span className="inline-flex items-center gap-1.5 font-mono text-[11px] text-ink-muted">
               <ArrowLeft className="h-3.5 w-3.5 transition-transform group-hover:-translate-x-0.5" /> {prev.id}
             </span>
-            <span className="mt-1 block text-sm font-medium">{prev.title.replace(/^ADR-\d+:\s*/, "")}</span>
+            <span className="mt-1 block text-sm font-medium">
+              <AdrTitle id={prev.id} fallback={prev.title} />
+            </span>
           </Link>
         ) : (
           <div />
@@ -53,7 +57,9 @@ export default async function AdrDetailPage({ params }: { params: Promise<{ slug
             <span className="inline-flex items-center gap-1.5 font-mono text-[11px] text-ink-muted">
               {next.id} <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
             </span>
-            <span className="mt-1 block text-sm font-medium">{next.title.replace(/^ADR-\d+:\s*/, "")}</span>
+            <span className="mt-1 block text-sm font-medium">
+              <AdrTitle id={next.id} fallback={next.title} />
+            </span>
           </Link>
         ) : (
           <div />
